@@ -35,13 +35,22 @@ def send_telegram_message(message: str):
     if not TG_BOT_TOKEN or not TG_CHAT_ID:
         print("⚠️ Telegram 未配置，跳过通知")
         return
-    try:
-        requests.post(f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage",
-                      json={"chat_id": TG_CHAT_ID, "text": message,
-                            "parse_mode": "HTML"}, timeout=10)
-        print("✅ Telegram 通知已发送")
-    except Exception as e:
-        print(f"❌ Telegram 发送失败: {e}")
+    url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage"
+    payload = {"chat_id": TG_CHAT_ID, "text": message, "parse_mode": "HTML"}
+    last_err = ""
+    for attempt in range(1, 4):
+        try:
+            r = requests.post(url, json=payload, timeout=(10, 30))
+            if r.status_code == 200:
+                print("✅ Telegram 通知已发送")
+                return
+            last_err = f"HTTP {r.status_code}: {r.text[:200]}"
+        except Exception as e:
+            last_err = str(e)
+        print(f"⚠️ Telegram 第 {attempt} 次发送失败: {last_err}")
+        if attempt < 3:
+            time.sleep(5 * attempt)
+    print(f"❌ Telegram 发送失败（已重试 3 次）: {last_err}")
 
 def format_notification(status: str, server_name: str = "", old: str = "",
                         new: str = "", error: str = "", reason: str = "") -> str:
