@@ -14,7 +14,7 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 TIMEOUT = 20
 
-MAX_RENEWAL_DAYS = 30
+MAX_RENEWAL_DAYS = 14
 
 def mask(s: str, head: int = 6, tail: int = 4) -> str:
     s = s or ""
@@ -116,14 +116,20 @@ def should_skip_renew(gate: dict):
     return False, ""
 
 LIMIT_TEXT = "renew limit reached"
+# 面板在已达续期上限时的另一套文案（Jexactyl DisplayException）
+CAP_TEXT = "cannot add more than"
 
 def contains_limit_text(text: str) -> bool:
     low = (text or "").lower()
     nospace = " ".join(low.split())
     return LIMIT_TEXT in nospace or "renew limit" in nospace
 
+def contains_cap_text(text: str) -> bool:
+    nospace = " ".join((text or "").lower().split())
+    return CAP_TEXT in nospace
+
 def is_limit_error(info: str) -> bool:
-    if contains_limit_text(info):
+    if contains_limit_text(info) or contains_cap_text(info):
         return True
     low = (info or "").lower()
     return any(k in low for k in ("limit", "maximum", "max", "cooldown",
